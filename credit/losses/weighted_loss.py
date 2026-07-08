@@ -28,7 +28,7 @@ def latitude_weights(conf):
     """
     # Open the dataset and extract latitude and longitude information
     ds = xr.open_dataset(conf["loss"]["latitude_weights"])
-    lat = torch.from_numpy(ds["latitude"].values).float()
+    lat = torch.from_numpy(ds["latitude"].values.copy()).float()
     lon_dim = ds["longitude"].shape[0]
 
     # Calculate weights using PyTorch operations

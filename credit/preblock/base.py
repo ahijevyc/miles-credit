@@ -16,10 +16,18 @@ class BasePreblock(nn.Module):
         values are shared (not copied) since preblocks must not mutate tensors
         in-place anyway (doing so would break autograd).
         """
-        return {
-            dt: ({src: dict(vars_) for src, vars_ in srcs.items()} if isinstance(srcs, dict) else srcs)
-            for dt, srcs in batch.items()
-        }
+        copied_batch = {}
+        for data_type, sources in batch.items():
+            if not isinstance(sources, dict):
+                copied_batch[data_type] = sources
+                continue
+
+            copied_sources = {}
+            for source, variables in sources.items():
+                copied_sources[source] = dict(variables) if isinstance(variables, dict) else variables
+            copied_batch[data_type] = copied_sources
+
+        return copied_batch
 
     def forward(self, batch: dict) -> dict:
         pass

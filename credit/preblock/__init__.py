@@ -23,6 +23,15 @@ PREBLOCK_REGISTRY = {
 _VALID_SECTIONS = {"ic_only", "per_step"}
 
 
+def _is_concat_block(preblock) -> bool:
+    """Return True for the end-of-chain concat block.
+
+    The rollout path can load preblock classes through more than one module
+    path, so we avoid relying only on ``isinstance`` identity here.
+    """
+    return preblock.__class__.__name__ == "ConcatToTensor"
+
+
 def _build_preblock_section(section_cfg: dict) -> nn.ModuleDict:
     modules = {}
     for name, block_cfg in section_cfg.items():
@@ -98,7 +107,7 @@ def _run_preblock_group(group: nn.ModuleDict, batch: dict, device=None):
                 batch, meta = result
         else:
             batch = result
-        if isinstance(preblock, ConcatToTensor):
+        if _is_concat_block(preblock):
             to_device = preblock.to_device
             concat_ran = True
 

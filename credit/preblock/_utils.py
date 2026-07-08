@@ -25,7 +25,12 @@ def _parse_variable_selection(variable_list: list, state_dict: dict, data_types:
     # appear under more than one data type).
     all_variables = []
     for data_type in data_types:
-        for source in state_dict.get(data_type, {}).values():
+        data_group = state_dict.get(data_type, {})
+        if not isinstance(data_group, dict):
+            continue
+        for source in data_group.values():
+            if not isinstance(source, dict):
+                continue
             for var_name in source:
                 if var_name not in all_variables:
                     all_variables.append(var_name)

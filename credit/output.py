@@ -307,7 +307,8 @@ def save_netcdf_increment(
 
         logger.info(f"Trying to save forecast hour {forecast_hour} to {nc_filename}")
 
-        save_location = os.path.join(conf["predict"]["save_forecast"], nc_filename)
+        save_root = expandvars(conf["predict"]["save_forecast"])
+        save_location = os.path.join(save_root, nc_filename)
         os.makedirs(save_location, exist_ok=True)
 
         unique_filename = os.path.join(save_location, f"pred_{nc_filename}_{forecast_hour:03d}.nc")
@@ -433,7 +434,8 @@ def save_netcdf_clean(
     if use_logger:
         logger.info(f"Process forecast hour {forecast_hour} to {nc_filename}")
 
-    save_location = os.path.join(conf["predict"]["save_forecast"], nc_filename)
+    save_root = expandvars(conf["predict"]["save_forecast"])
+    save_location = os.path.join(save_root, nc_filename)
     os.makedirs(save_location, exist_ok=True)
 
     unique_filename = os.path.join(save_location, f"pred_{nc_filename}_{forecast_hour:03d}.nc")
@@ -493,7 +495,8 @@ def save_netcdf_diag(
 
     logger.info(f"Trying to save forecast hour {forecast_hour} to {nc_filename}")
 
-    save_location = os.path.join(conf["predict"]["save_forecast"], nc_foldername)
+    save_root = expandvars(conf["predict"]["save_forecast"])
+    save_location = os.path.join(save_root, nc_foldername)
     os.makedirs(save_location, exist_ok=True)
 
     unique_filename = os.path.join(

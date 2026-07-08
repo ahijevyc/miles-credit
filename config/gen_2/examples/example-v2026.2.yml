@@ -162,7 +162,7 @@ trainer:
 preblocks:
   per_step:
     scaler:
-      type: bridgescaler_transform
+      type: bridgescaler_transformer
       args:
         scaler_path: '/glade/campaign/cisl/aiml/credit_scalers/ERA5_mlevel_1deg_6h_bridgescaler_pre.json'
         variables: ['ERA5/prognostic/3d/u_component_of_wind', 'ERA5/prognostic/3d/v_component_of_wind',
@@ -239,6 +239,9 @@ model:
     pad_lat: [ 37, 38 ]
     pad_lon: [ 12, 12 ]
 
+  post_conf:
+    activate: False
+
   
 # ---- Loss ---- #
 loss:
@@ -266,6 +269,7 @@ predict:
     start_hours: [ 0, 12 ]
     duration: 1
     days: 1
+  metadata: 'credit/metadata/era5.yaml'
   save_forecast: '/glade/derecho/scratch/$USER/CREDIT_runs/starter_v2'
   use_laplace_filter: False
 

@@ -91,7 +91,11 @@ class ConcatToTensor(BasePreblock):
 
         for data_type, sources in batch.items():
             if data_type == "metadata":
+                if not isinstance(sources, dict):
+                    continue
                 for source, meta_dict in sources.items():
+                    if not isinstance(meta_dict, dict):
+                        continue
                     if "input_datetime" in meta_dict:
                         metadata["input"][source] = {"datetime": pd.DatetimeIndex(meta_dict["input_datetime"].numpy())}
                     if "target_datetime" in meta_dict:

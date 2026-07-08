@@ -159,7 +159,14 @@ def _build_output_denorm(conf, device, dtype=torch.float32):
 
 def _sample_to_batch(sample):
     """Wrap a single LocalDataset sample (no batch dim) into preblock-compatible dict."""
-    return {"era5": {"input": {k: v.unsqueeze(0) for k, v in sample["input"].items()}, "metadata": sample["metadata"]}}
+    return {
+        "input": {
+            "ERA5": {
+                k: v.unsqueeze(0) for k, v in sample["input"].items()
+            }
+        },
+        "metadata": sample["metadata"]
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -221,11 +228,21 @@ def predict(rank, world_size, conf, p):
         f"lead_time_periods={lead_time_periods} must be a positive integer that divides 24 evenly "
         f"(derived from data.timestep={conf['data'].get('timestep')})"
     )
-    forecast_steps = conf["predict"].get("forecast_steps", conf["predict"].get("days", 1) * (24 // lead_time_periods))
+    _forecasts_conf = conf["predict"].get("forecasts", {})
+    _days = conf["predict"].get(
+        "days",  # top-level predict.days (backward compat)
+        _forecasts_conf.get("days", 1) if isinstance(_forecasts_conf, dict) else 1,
+    )
+    forecast_steps = conf["predict"].get("forecast_steps", _days * (24 // lead_time_periods))
 
     # ---- Preblocks ----
     preblocks = build_preblocks(conf.get("preblocks", {}))
-
+    conf["preblocks"]["norm"] = {
+        "args": {
+            "mean_path": "/glade/campaign/cisl/aiml/ksha/CREDIT_data/ERA5_mlevel_1deg/mean_std/mean_6h_1979_2019_conserve_1deg.nc",
+            "std_path": "/glade/campaign/cisl/aiml/ksha/CREDIT_data/ERA5_mlevel_1deg/mean_std/std_6h_1979_2019_conserve_1deg.nc"
+        }
+    }
     # ---- Inverse normalization ----
     denorm_mean, denorm_std = _build_output_denorm(conf, device)
 
@@ -273,7 +290,7 @@ def predict(rank, world_size, conf, p):
             # Step 0: load full initial state
             sample_full = dataset[(t0, 0)]
             batch_full = _sample_to_batch(sample_full)
-            x, _ = apply_preblocks(preblocks, batch_full)
+            x = apply_preblocks(preblocks, batch_full)["x"]
             x = x.to(device).float()  # (1, C_in, 1, H, W)
 
             x_init = None
@@ -314,7 +331,7 @@ def predict(rank, world_size, conf, p):
                     t_next = t0 + step * dt
                     sample_frc = dataset[(t_next, 1)]  # loads only dynamic_forcing
                     batch_frc = _sample_to_batch(sample_frc)
-                    x_frc, _ = apply_preblocks(preblocks, batch_frc)
+                    x_frc = apply_preblocks(preblocks, batch_frc)["x"]
                     x_frc = x_frc.to(device).float()  # (1, n_dyn, 1, H, W)
                     x = update_x(x, x_frc, y_pred.detach(), slices)
 
@@ -442,6 +459,10 @@ def main():
     # load_forecasts returns [init_str, end_str] pairs; extract init times and
     # normalise to the T%HZ format expected by _save_worker / save_netcdf_increment.
     raw_forecasts = load_forecasts(conf)
+    # Preserve days/forecast_steps before forecasts dict is replaced with a plain list.
+    _fc = conf["predict"].get("forecasts", {})
+    if isinstance(_fc, dict) and "days" not in conf["predict"]:
+        conf["predict"]["days"] = _fc.get("days", 1)
     conf["predict"]["forecasts"] = [
         pd.Timestamp(f[0] if isinstance(f, (list, tuple)) else f).strftime("%Y-%m-%dT%HZ") for f in raw_forecasts
     ]
