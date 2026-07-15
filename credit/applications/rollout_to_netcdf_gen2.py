@@ -236,13 +236,8 @@ def predict(rank, world_size, conf, p):
     forecast_steps = conf["predict"].get("forecast_steps", _days * (24 // lead_time_periods))
 
     # ---- Preblocks ----
-    preblocks = build_preblocks(conf.get("preblocks", {}))
-    conf["preblocks"]["norm"] = {
-        "args": {
-            "mean_path": "/glade/campaign/cisl/aiml/ksha/CREDIT_data/ERA5_mlevel_1deg/mean_std/mean_6h_1979_2019_conserve_1deg.nc",
-            "std_path": "/glade/campaign/cisl/aiml/ksha/CREDIT_data/ERA5_mlevel_1deg/mean_std/std_6h_1979_2019_conserve_1deg.nc"
-        }
-    }
+    preblocks = build_preblocks(conf)
+
     # ---- Inverse normalization ----
     denorm_mean, denorm_std = _build_output_denorm(conf, device)
 

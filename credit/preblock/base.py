@@ -30,7 +30,7 @@ class BasePreblock(nn.Module):
         return copied_batch
 
     def forward(self, batch: dict) -> dict:
-        pass
+        raise NotImplementedError
 
     @classmethod
     def from_config(cls, **kwargs):
